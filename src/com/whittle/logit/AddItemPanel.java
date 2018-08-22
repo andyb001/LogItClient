@@ -275,11 +275,11 @@ public class AddItemPanel extends JPanel {
 		try {
 			Icon icon = imageLabel.getIcon();
 			BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			
 			File outFile = new File("C:/tmp/out.jpg");
 			FileOutputStream fos = new FileOutputStream(outFile);
 			Graphics2D g2 = image.createGraphics();
-			g2.drawImage(image, 0, 0, null);
+			icon.paintIcon(null, g2, 0,0);
 			ImageIO.write(image, "jpg", fos);
 			byte[] fileContent = Files.readAllBytes(outFile.toPath());
 			String sTRBytes = Base64.encodeBase64URLSafeString(fileContent);
@@ -288,16 +288,13 @@ public class AddItemPanel extends JPanel {
 			icon = barCodeImageLabel.getIcon();
 			if (icon != null) {
 				image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
-				fos = new FileOutputStream(outFile);
 				
-				//baos = new ByteArrayOutputStream();
+				fos = new FileOutputStream(outFile);
 				g2 = image.createGraphics();
-				g2.drawImage(image, 0, 0, null);
+				icon.paintIcon(null, g2, 0,0);
 				ImageIO.write(image, "jpg", fos);
 				fileContent = Files.readAllBytes(outFile.toPath());
 				sTRBytes = Base64.encodeBase64URLSafeString(fileContent);
-				//imageInByte = baos.toByteArray();
-				//System.out.println("Image 2: " + imageInByte.length);
 				itemDTO.setBarCodeImageFileStrBytes(sTRBytes);
 			}
 			
