@@ -23,27 +23,30 @@ import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Vector;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.ListCellRenderer;
 
+import com.google.api.client.util.Base64;
+import com.whittle.logit.dto.ItemDTO;
 import com.whittle.logit.dto.ItemTypeDTO;
 
 public class AddItemPanel extends JPanel {
@@ -56,6 +59,8 @@ public class AddItemPanel extends JPanel {
 	JLabel barCodeImageLabel = new JLabel();
 	JButton rotateButton = new JButton("Rotate");
 	JComboBox<ItemTypeDTO> itemTypeComboBox = null;
+	JButton saveButton = new JButton("Save");
+	JTextField costTextField = new JTextField();
 
 	public AddItemPanel() {
 		init();
@@ -94,7 +99,7 @@ public class AddItemPanel extends JPanel {
 		
 		
 		g.gridx++;
-		g.gridheight = 3;
+		g.gridheight = 4;
 		imageLabel.setPreferredSize(new Dimension(MAX_IMG_SIZE, MAX_IMG_SIZE));
 		imageLabel.setMinimumSize(new Dimension(MAX_IMG_SIZE, MAX_IMG_SIZE));
 		imageLabel.setBorder(BorderFactory.createTitledBorder("Main Image"));
@@ -122,6 +127,12 @@ public class AddItemPanel extends JPanel {
 		itemTypeComboBox = new JComboBox<>(vec);
 		itemTypeComboBox.setRenderer(new MyComboBoxRenderer());
 		add(itemTypeComboBox, g);
+		
+		g.gridy++;
+		g.gridx = 0;
+		add(new JLabel("Cost"), g);
+		g.gridx++;
+		add(costTextField, g);
 		
 		imageLabel.setDropTarget(new DropTarget() {
 			private static final long serialVersionUID = 1L;
@@ -238,8 +249,70 @@ public class AddItemPanel extends JPanel {
 		    }
 		});
 		add(barCodeImageLabel, g);
+		
+		g.gridx = 0;
+		g.gridy++;
+		add(saveButton, g);
+		
+		saveButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				saveItem();
+			}
+		});
 	}
 	
+	protected void saveItem() {
+		
+		ItemDTO itemDTO = new ItemDTO();
+		
+		itemDTO.setName(itemNameTextField.getText());
+		itemDTO.setDescription(descriptionTextArea.getText());
+		itemDTO.setCost(Double.valueOf(costTextField.getText()==""?"0.0":costTextField.getText()));
+		itemDTO.setItemTypeId(((ItemTypeDTO)itemTypeComboBox.getSelectedItem()).getId());
+		int response = 0;
+		try {
+			Icon icon = imageLabel.getIcon();
+			BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			File outFile = new File("C:/tmp/out.jpg");
+			FileOutputStream fos = new FileOutputStream(outFile);
+			Graphics2D g2 = image.createGraphics();
+			g2.drawImage(image, 0, 0, null);
+			ImageIO.write(image, "jpg", fos);
+			byte[] fileContent = Files.readAllBytes(outFile.toPath());
+			String sTRBytes = Base64.encodeBase64URLSafeString(fileContent);
+			itemDTO.setImageFileStrBytes(sTRBytes);
+			
+			icon = barCodeImageLabel.getIcon();
+			if (icon != null) {
+				image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(),BufferedImage.TYPE_INT_RGB);
+				fos = new FileOutputStream(outFile);
+				
+				//baos = new ByteArrayOutputStream();
+				g2 = image.createGraphics();
+				g2.drawImage(image, 0, 0, null);
+				ImageIO.write(image, "jpg", fos);
+				fileContent = Files.readAllBytes(outFile.toPath());
+				sTRBytes = Base64.encodeBase64URLSafeString(fileContent);
+				//imageInByte = baos.toByteArray();
+				//System.out.println("Image 2: " + imageInByte.length);
+				itemDTO.setBarCodeImageFileStrBytes(sTRBytes);
+			}
+			
+			response = Service.saveItem(itemDTO);
+			System.out.println("Response: " + response);
+			
+			if (response != 200) {
+				JOptionPane.showMessageDialog(this, "Error saving Item.", "ERROR", JOptionPane.ERROR_MESSAGE);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error saving Item... " + e, "ERROR", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
 	private AffineTransform findTranslation(AffineTransform at, BufferedImage bi) {
 	    Point2D p2din, p2dout;
 
