@@ -39,4 +39,8 @@ public class MainPanel extends JPanel {
 		splitPane.setRightComponent(new AddItemPanel());
 	}
 
+	public JSplitPane getSplitPane() {
+		return splitPane;
+	}
+
 }
